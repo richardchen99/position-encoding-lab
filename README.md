@@ -1,75 +1,119 @@
 # Position Encoding Lab
 
-An interactive research lab by **Richard Chen · 中国人民大学 / Renmin University of China**.
+**See how position becomes geometry.**
 
-[Live lab](https://richardchen99.github.io/position-encoding-lab/) · [Personal research](https://richardchen99.github.io)
+An interactive comparison of **Sinusoidal embeddings, RoPE, and ALiBi** under the same content vectors and causal window. Rotate a vector, shift a context, change a slope—and inspect exactly what happens to the attention score.
 
-同一组内容向量如何因为位置而改变 attention？用 Sinusoidal、RoPE、ALiBi 三种可计算机制并排回答。
+[**Open the lab ↗**](https://richardchen99.github.io/position-encoding-lab/) · [Research note · 中文](https://richardchen99.github.io/blog/position-encoding-lab-note/) · [中文 README](README.zh-CN.md) · [Quick start](#quick-start)
 
-## Experiments
+Created by **Richard Chen · Renmin University of China / 中国人民大学** · [Homepage](https://richardchen99.github.io)
 
-- **Geometry of position**：逐步观察原始向量 → 位置变换 → 点积与缩放 → softmax，维度对、频率基底和 ALiBi 斜率可调。
-- **Controlled context shift**：同时移动 Query / Key 的绝对位置，比较相同相对距离下的点积误差。
-- **Side-by-side attention**：同一因果窗口内的三个注意力分布同步更新。
-- **Numerical trace**：展示 8 维向量的每个分量，使用 KaTeX 渲染推导。
+[![Position Encoding Lab showing rotary geometry, token selection, and attention comparison](docs/assets/overview.jpg)](https://richardchen99.github.io/position-encoding-lab/)
 
-两个句子示例将 `it → animal` 与 `it → report` 放在不同距离。点击词可选择 Key；词仅提供直观背景，内容向量固定，未训练指代关系。
+*Real application capture: vector geometry, numerical traces, and attention distributions share one experiment state.*
 
-## Try this
+## Three mechanisms, one controlled experiment
 
-1. 保持 RoPE，点击 Play 完成四个阶段。
-2. 移动 **Shift both positions**，向量旋转，但位置得分的平移误差接近浮点精度。
-3. 切换 Sinusoidal 再执行步骤。相加后的内容 / 位置交叉项使得严格平移不变性一般不成立。
-4. 切换 ALiBi，调高 **Head slope**，观察更远的历史位置得到更大的负偏置。
+| Mechanism | Intervention | What to inspect |
+| --- | --- | --- |
+| **Sinusoidal** | Add position vectors to fixed content | Content–position cross terms and the effect of moving the origin |
+| **RoPE** | Rotate adjacent dimension pairs | Preserved vector norms and relative-position dot products |
+| **ALiBi** | Subtract a distance-dependent score bias | How a head slope changes preference for recent keys |
+| **Shared comparison** | Shift Query and Key together | Which scores remain unchanged at a fixed relative distance |
+
+Step through **content → position transform → score → softmax**, choose a dimension pair, and compare all three distributions side by side. Short and long sentence examples provide an intuitive frame; the fixed content vectors do not represent learned coreference. The interface uses English controls and Chinese explanations.
+
+## Experimental framework
+
+![Framework for comparing additive positions, rotary geometry, and linear attention bias under shared inputs](docs/assets/architecture.png)
+
+*Original schematic of the shared inputs, three mathematical branches, and numerical checks. [Editable SVG](docs/assets/architecture.svg) · [Figure provenance](docs/assets/README.md).*
+
+## Try a translation-invariance test
+
+1. Select **RoPE**, use the short example with Query 5 and Key 1, and finish the four playback stages.
+2. Move **Shift both positions** from 0 to 24. The vectors rotate, while their relative-position score stays unchanged within floating-point precision.
+3. Select **Sinusoidal** and repeat. The additive experiment generally changes because its content–position cross terms depend on the origin.
+4. Select **ALiBi**, then increase **Head slope**. Distant causal keys receive a larger negative bias; shifting both positions preserves their distance.
+
+In the captured RoPE state, the displayed shift error is **zero**. This is a check of the implemented identity at display precision, not a long-context quality benchmark.
+
+<details>
+<summary><strong>Inspect the shift test and attention comparison</strong></summary>
+
+![RoPE with Query 5, Key 1, shared position shift 24, and zero displayed score error](docs/assets/shift.jpg)
+
+*Common translation changes absolute angles while preserving the relative-position score.*
+
+![Three attention distributions for the long sentence example with Query 11 and Key 2](docs/assets/comparison.jpg)
+
+*The longer example compares the three mechanisms under the same causal window.*
+
+</details>
 
 ## Mathematical scope
 
-RoPE 按相邻维度对旋转：
+RoPE applies a rotation to each adjacent dimension pair. With fixed frequencies:
 
 $$
 (R_mq)^\top(R_nk)=q^\top R_{n-m}k.
 $$
 
-ALiBi 在因果窗口中加入线性偏置：
+ALiBi adds a linear penalty to causal attention scores:
 
 $$
 s_{mn}=\frac{q_m^\top k_n}{\sqrt{d_k}}-a_h(m-n),\quad n\leq m.
 $$
 
-Sinusoidal 实验采用固定 8 维内容向量、位置相加以及恒等 Q/K 投影，隔离位置机制。真实 Transformer 使用可学习投影。RoPE / ALiBi 的机制特性不能直接证明真实模型的长上下文性能。
+The Sinusoidal branch uses **fixed eight-dimensional content vectors, additive positions, and identity Q/K projections** to isolate the mechanism. Learned projections and trained model behavior are outside this experiment. The common-translation properties of RoPE and ALiBi do not establish extrapolation quality in a real language model.
 
-## Run locally
+## Quick start
 
-Use Node.js **24** (supported minimum: 22.12).
+Use **Node.js 24**; the supported minimum is 22.12.
 
 ```bash
+git clone https://github.com/richardchen99/position-encoding-lab.git
+cd position-encoding-lab
 npm ci
 npm run dev -- --host 127.0.0.1
+```
+
+```bash
 npm test
 npm run build
 npm run preview -- --host 127.0.0.1
 ```
 
-## Implementation
+All experiment calculations run in the browser; no model service, API key, or GPU is required. Built with React 19, TypeScript, Vite, Framer Motion, and KaTeX.
 
-- `src/model.ts`：位置向量、二维旋转、注意力分数与稳定 softmax。
-- `src/App.tsx`：交互状态、示例、SVG 几何与数值视图。
-- `src/shared.tsx` / `src/style.css`：浅色玻璃面板、Framer Motion 动画、KaTeX、键盘可访问控件及 reduced-motion 支持。
-- `tests/model.test.mjs`：旋转范数 / 相对位置恒等式、平移不变性、概率归一化。
+## Implementation and verification
 
-所有计算在浏览器本地完成，无模型 API 或密钥。`npm test` 用 TypeScript 编译模型后运行 Node test runner；`npm run build` 进行类型检查并构建静态站点。
+| Entry point | Responsibility |
+| --- | --- |
+| [`src/model.ts`](src/model.ts) | Position vectors, rotations, score biases, and stable softmax |
+| [`src/App.tsx`](src/App.tsx) | Experiment state, token selection, geometry, and numerical views |
+| [`src/shared.tsx`](src/shared.tsx) · [`src/style.css`](src/style.css) | Formulas, animation, glass panels, and reduced-motion support |
+| [`tests/model.test.mjs`](tests/model.test.mjs) | Norm preservation, relative-position identity, ALiBi invariance, and normalization |
 
-`.github/workflows/deploy.yml` 在 `main` 推送后使用 Node 24 执行测试与构建，通过 GitHub Pages Actions 发布。首次部署需将仓库 Pages source 设为 GitHub Actions。
+`npm test` compiles the model and runs the Node test runner. The [Pages workflow](.github/workflows/deploy.yml) tests, type-checks, builds, and deploys `main` using Node 24. For a fork, select **GitHub Actions** as the Pages source.
 
-## Research series
+## Reading and citation
 
-[Transformer Architecture Lab](https://richardchen99.github.io/transformer-architecture-lab/) ·
-[LLM Inference Lab](https://richardchen99.github.io/llm-inference-lab/) ·
-[Tokenizer Playground](https://richardchen99.github.io/tokenizer-playground/) ·
-[LLM RL Lab](https://richardchen99.github.io/llm-rl-lab/)
+- Vaswani et al. [*Attention Is All You Need*](https://arxiv.org/abs/1706.03762), 2017 — sinusoidal positional encoding.
+- Su et al. [*RoFormer: Enhanced Transformer with Rotary Position Embedding*](https://arxiv.org/abs/2104.09864), 2021 preprint — rotary position geometry.
+- Press et al. [*Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation*](https://arxiv.org/abs/2108.12409), 2021 preprint — ALiBi.
+- [Project research note](https://richardchen99.github.io/blog/position-encoding-lab-note/) — the experiment explained in Chinese.
 
-## Sources
+For teaching or writing, link to this repository and record the commit used. [CITATION.cff](CITATION.cff) provides machine-readable software attribution.
 
-- [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
-- [RoFormer: Enhanced Transformer with Rotary Position Embedding](https://arxiv.org/abs/2104.09864)
-- [Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation](https://arxiv.org/abs/2108.12409)
+## Explore the series
+
+| Lab | Central question |
+| --- | --- |
+| [Tokenizer Playground](https://github.com/richardchen99/tokenizer-playground) | How does a corpus become a reusable vocabulary? |
+| [Transformer Architecture Lab](https://github.com/richardchen99/transformer-architecture-lab) | How does attention turn token representations into context? |
+| **Position Encoding Lab** | How does position change attention geometry? |
+| [LLM Inference Lab](https://github.com/richardchen99/llm-inference-lab) | When can past computation be reused? |
+| [LLM RL Lab](https://github.com/richardchen99/llm-rl-lab) | How does reward change a response distribution? |
+
+Found it useful? A star helps others discover the series. Contributions that add well-specified mechanisms or stronger numerical checks are welcome.

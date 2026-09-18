@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this lab in teaching or writing, please cite the software and record the commit used."
+type: software
+title: "Position Encoding Lab"
+abstract: "An interactive educational comparison of Sinusoidal position embeddings, RoPE, and ALiBi."
+authors:
+  - family-names: Chen
+    given-names: Richard
+    affiliation: "Renmin University of China"
+    website: "https://richardchen99.github.io"
+repository-code: "https://github.com/richardchen99/position-encoding-lab"
+url: "https://richardchen99.github.io/position-encoding-lab/"
+keywords:
+  - positional encoding
+  - RoPE
+  - ALiBi
+  - interactive visualization
