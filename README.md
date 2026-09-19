@@ -1,75 +1,75 @@
 # Position Encoding Lab
 
-**See how position becomes geometry.**
+**位置如何改变注意力：从向量几何到数值验证。**
 
-An interactive comparison of **Sinusoidal embeddings, RoPE, and ALiBi** under the same content vectors and causal window. Rotate a vector, shift a context, change a slope—and inspect exactly what happens to the attention score.
+在相同内容向量与因果窗口中，对比 **Sinusoidal、RoPE 和 ALiBi**。旋转向量、平移上下文、调节距离惩罚，再从注意力分数中检查每一次干预的结果。
 
-[**Open the lab ↗**](https://richardchen99.github.io/position-encoding-lab/) · [Research note · 中文](https://richardchen99.github.io/blog/position-encoding-lab-note/) · [中文 README](README.zh-CN.md) · [Quick start](#quick-start)
+[**进入实验室 ↗**](https://richardchen99.github.io/position-encoding-lab/) · [配套研究笔记](https://richardchen99.github.io/blog/position-encoding-lab-note/) · [English](README.en.md) · [本地运行](#本地运行)
 
-Created by **Richard Chen · Renmin University of China / 中国人民大学** · [Homepage](https://richardchen99.github.io)
+作者：**Richard Chen · 中国人民大学** · [个人主页](https://richardchen99.github.io)
 
-[![Position Encoding Lab showing rotary geometry, token selection, and attention comparison](docs/assets/overview.jpg)](https://richardchen99.github.io/position-encoding-lab/)
+[![位置编码实验室：旋转几何、token 选择与注意力对比](docs/assets/overview.jpg)](https://richardchen99.github.io/position-encoding-lab/)
 
-*Real application capture: vector geometry, numerical traces, and attention distributions share one experiment state.*
+*真实运行截图。向量几何、数值轨迹与注意力分布共享同一实验状态。*
 
-## Three mechanisms, one controlled experiment
+## 三种机制，一组受控实验
 
-| Mechanism | Intervention | What to inspect |
+| 机制 | 干预方式 | 观察重点 |
 | --- | --- | --- |
-| **Sinusoidal** | Add position vectors to fixed content | Content–position cross terms and the effect of moving the origin |
-| **RoPE** | Rotate adjacent dimension pairs | Preserved vector norms and relative-position dot products |
-| **ALiBi** | Subtract a distance-dependent score bias | How a head slope changes preference for recent keys |
-| **Shared comparison** | Shift Query and Key together | Which scores remain unchanged at a fixed relative distance |
+| **正弦位置编码（Sinusoidal）** | 将位置向量加到固定内容向量上 | 内容与位置的交叉项，以及原点移动的影响 |
+| **旋转位置编码（RoPE）** | 对相邻的成对维度进行旋转 | 向量范数保持，以及依赖相对位置的点积 |
+| **线性偏置（ALiBi）** | 在分数中减去距离惩罚 | 注意力头的斜率如何改变对较近 Key 的偏好 |
+| **共同对照** | 同时移动 Query 和 Key | 相对距离不变时，哪些分数保持不变 |
 
-Step through **content → position transform → score → softmax**, choose a dimension pair, and compare all three distributions side by side. Short and long sentence examples provide an intuitive frame; the fixed content vectors do not represent learned coreference. The interface uses English controls and Chinese explanations.
+逐步播放 **内容 → 位置变换 → 得分 → softmax**，选择参与旋转的维度对，并排检查三种注意力分布。长短句子用于建立直觉；内容向量固定，不表示已经学会指代关系。界面采用英文控件与中文解释，以下操作步骤保留控件原名，便于查找。
 
-## Experimental framework
+## 实验框架
 
-![Framework for comparing additive positions, rotary geometry, and linear attention bias under shared inputs](docs/assets/architecture.png)
+![共享输入经过位置相加、旋转与线性偏置三条路径，再进行数值对照](docs/assets/architecture.png)
 
-*Original schematic of the shared inputs, three mathematical branches, and numerical checks. [Editable SVG](docs/assets/architecture.svg) · [Figure provenance](docs/assets/README.md).*
+*原创框架图：统一输入、三条数学路径与对应检查。[可编辑 SVG](docs/assets/architecture.svg) · [图片来源与状态](docs/assets/README.md)。*
 
-## Try a translation-invariance test
+## 做一次平移不变性实验
 
-1. Select **RoPE**, use the short example with Query 5 and Key 1, and finish the four playback stages.
-2. Move **Shift both positions** from 0 to 24. The vectors rotate, while their relative-position score stays unchanged within floating-point precision.
-3. Select **Sinusoidal** and repeat. The additive experiment generally changes because its content–position cross terms depend on the origin.
-4. Select **ALiBi**, then increase **Head slope**. Distant causal keys receive a larger negative bias; shifting both positions preserves their distance.
+1. 选择 **RoPE**，在短句中使用 Query 5、Key 1，完成四个播放阶段。
+2. 将共同平移量（**Shift both positions**）从 0 调到 24。向量角度改变，但相对位置得分在浮点误差范围内保持不变。
+3. 切换 **Sinusoidal** 重复实验。位置相加后的内容/位置交叉项依赖原点，分数一般会变化。
+4. 切换 **ALiBi** 并增大注意力头斜率（**Head slope**）。更远的历史 Key 得到更大负偏置；共同平移仍保留相对距离。
 
-In the captured RoPE state, the displayed shift error is **zero**. This is a check of the implemented identity at display precision, not a long-context quality benchmark.
+截图中的 RoPE 平移误差显示为**零**。它是当前实现与显示精度下的恒等式检查，不是模型长上下文能力的基准测试。
 
 <details>
-<summary><strong>Inspect the shift test and attention comparison</strong></summary>
+<summary><strong>展开平移实验与注意力对比</strong></summary>
 
-![RoPE with Query 5, Key 1, shared position shift 24, and zero displayed score error](docs/assets/shift.jpg)
+![Query 5、Key 1、共同平移 24 的 RoPE 实验，得分误差显示为零](docs/assets/shift.jpg)
 
-*Common translation changes absolute angles while preserving the relative-position score.*
+*共同平移改变绝对角度，同时保留相对位置得分。*
 
-![Three attention distributions for the long sentence example with Query 11 and Key 2](docs/assets/comparison.jpg)
+![长句 Query 11、Key 2 下的三种注意力分布](docs/assets/comparison.jpg)
 
-*The longer example compares the three mechanisms under the same causal window.*
+*同一因果窗口中的三种位置机制，可以逐项对照。*
 
 </details>
 
-## Mathematical scope
+## 数学机制与实现范围
 
-RoPE applies a rotation to each adjacent dimension pair. With fixed frequencies:
+RoPE 对相邻维度对旋转。频率固定时：
 
 $$
 (R_mq)^\top(R_nk)=q^\top R_{n-m}k.
 $$
 
-ALiBi adds a linear penalty to causal attention scores:
+ALiBi 对因果注意力加入线性距离惩罚：
 
 $$
 s_{mn}=\frac{q_m^\top k_n}{\sqrt{d_k}}-a_h(m-n),\quad n\leq m.
 $$
 
-The Sinusoidal branch uses **fixed eight-dimensional content vectors, additive positions, and identity Q/K projections** to isolate the mechanism. Learned projections and trained model behavior are outside this experiment. The common-translation properties of RoPE and ALiBi do not establish extrapolation quality in a real language model.
+Sinusoidal 分支采用**固定八维内容向量、位置相加与恒等 Q/K 投影**，用于隔离机制。实验不涉及学习投影或训练模型。RoPE 与 ALiBi 的共同平移性质，不能直接证明真实语言模型的长度外推效果。
 
-## Quick start
+## 本地运行
 
-Use **Node.js 24**; the supported minimum is 22.12.
+推荐 **Node.js 24**，最低支持 22.12。
 
 ```bash
 git clone https://github.com/richardchen99/position-encoding-lab.git
@@ -84,36 +84,36 @@ npm run build
 npm run preview -- --host 127.0.0.1
 ```
 
-All experiment calculations run in the browser; no model service, API key, or GPU is required. Built with React 19, TypeScript, Vite, Framer Motion, and KaTeX.
+实验计算在浏览器内完成，无需模型服务、API 密钥或 GPU。技术栈为 React 19、TypeScript、Vite、Framer Motion 与 KaTeX。
 
-## Implementation and verification
+## 实现与验证
 
-| Entry point | Responsibility |
+| 入口 | 重点 |
 | --- | --- |
-| [`src/model.ts`](src/model.ts) | Position vectors, rotations, score biases, and stable softmax |
-| [`src/App.tsx`](src/App.tsx) | Experiment state, token selection, geometry, and numerical views |
-| [`src/shared.tsx`](src/shared.tsx) · [`src/style.css`](src/style.css) | Formulas, animation, glass panels, and reduced-motion support |
-| [`tests/model.test.mjs`](tests/model.test.mjs) | Norm preservation, relative-position identity, ALiBi invariance, and normalization |
+| [`src/model.ts`](src/model.ts) | 位置向量、旋转、分数偏置与稳定 softmax |
+| [`src/App.tsx`](src/App.tsx) | 实验状态、词元选择、几何与数值视图 |
+| [`src/shared.tsx`](src/shared.tsx) · [`src/style.css`](src/style.css) | 公式、动画、玻璃面板与减少动态效果的无障碍支持 |
+| [`tests/model.test.mjs`](tests/model.test.mjs) | 范数保持、相对位置恒等式、ALiBi 不变性与归一化 |
 
-`npm test` compiles the model and runs the Node test runner. The [Pages workflow](.github/workflows/deploy.yml) tests, type-checks, builds, and deploys `main` using Node 24. For a fork, select **GitHub Actions** as the Pages source.
+`npm test` 编译计算模型后，使用 Node 内置测试运行器执行验证。[Pages 工作流](.github/workflows/deploy.yml) 使用 Node 24 完成测试、类型检查、构建与 `main` 分支部署。Fork 仓库后，在 Pages 设置中将部署来源设为 **GitHub Actions** 即可部署。
 
-## Reading and citation
+## 阅读与引用
 
-- Vaswani et al. [*Attention Is All You Need*](https://arxiv.org/abs/1706.03762), 2017 — sinusoidal positional encoding.
-- Su et al. [*RoFormer: Enhanced Transformer with Rotary Position Embedding*](https://arxiv.org/abs/2104.09864), 2021 preprint — rotary position geometry.
-- Press et al. [*Train Short, Test Long: Attention with Linear Biases Enables Input Length Extrapolation*](https://arxiv.org/abs/2108.12409), 2021 preprint — ALiBi.
-- [Project research note](https://richardchen99.github.io/blog/position-encoding-lab-note/) — the experiment explained in Chinese.
+- Vaswani 等：[Attention Is All You Need](https://arxiv.org/abs/1706.03762)，2017，正弦位置编码。
+- Su 等：[RoFormer](https://arxiv.org/abs/2104.09864)，2021 预印本，旋转位置编码。
+- Press 等：[Train Short, Test Long](https://arxiv.org/abs/2108.12409)，2021 预印本，ALiBi。
+- [配套研究笔记](https://richardchen99.github.io/blog/position-encoding-lab-note/)，中文实验导读。
 
-For teaching or writing, link to this repository and record the commit used. [CITATION.cff](CITATION.cff) provides machine-readable software attribution.
+用于课程或文章时，可链接本仓库并记录所用提交版本。[CITATION.cff](CITATION.cff) 提供机器可读的软件署名信息。
 
-## Explore the series
+## 系列实验室
 
-| Lab | Central question |
+| 项目 | 核心问题 |
 | --- | --- |
-| [Tokenizer Playground](https://github.com/richardchen99/tokenizer-playground) | How does a corpus become a reusable vocabulary? |
-| [Transformer Architecture Lab](https://github.com/richardchen99/transformer-architecture-lab) | How does attention turn token representations into context? |
-| **Position Encoding Lab** | How does position change attention geometry? |
-| [LLM Inference Lab](https://github.com/richardchen99/llm-inference-lab) | When can past computation be reused? |
-| [LLM RL Lab](https://github.com/richardchen99/llm-rl-lab) | How does reward change a response distribution? |
+| [Tokenizer Playground](https://github.com/richardchen99/tokenizer-playground) | 语料怎样变成可复用词表？ |
+| [Transformer Architecture Lab](https://github.com/richardchen99/transformer-architecture-lab) | 注意力怎样将词元表示转为上下文？ |
+| **Position Encoding Lab** | 位置怎样改变注意力几何？ |
+| [LLM Inference Lab](https://github.com/richardchen99/llm-inference-lab) | 什么条件下可以复用历史计算？ |
+| [LLM RL Lab](https://github.com/richardchen99/llm-rl-lab) | 奖励怎样改变回答分布？ |
 
-Found it useful? A star helps others discover the series. Contributions that add well-specified mechanisms or stronger numerical checks are welcome.
+如果它对你的学习或教学有帮助，欢迎点亮 Star。也欢迎补充有明确数学定义的位置机制，或完善数值验证。
